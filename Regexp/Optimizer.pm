@@ -1,12 +1,12 @@
 #
-# $Id: Optimizer.pm,v 0.11 2004/05/03 15:07:53 dankogai Exp $
+# $Id: Optimizer.pm,v 0.12 2004/05/04 17:12:14 dankogai Exp dankogai $
 #
 package Regexp::Optimizer;
 use 5.006; # qr/(??{}/ needed
 use strict;
 use warnings;
 use base qw/Regexp::List/;
-our $VERSION = do { my @r = (q$Revision: 0.11 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.12 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -14,7 +14,19 @@ our $VERSION = do { my @r = (q$Revision: 0.11 $ =~ /\d+/g); sprintf "%d."."%02d"
 #our $DEBUG     = 0;
 
 # see perldoc perlop
-our $RE_PAREN = 
+
+# perldoc perlop on perl 5.8.4 or later
+#
+#  Pragmata are now correctly propagated into (?{...}) constructions in
+#  regexps.  Code such as
+#
+#    my $x = qr{ ... (??{ $x }) ... };
+#
+#   will now (correctly) fail under use strict. (As the inner $x is 
+#   and has always referred to $::x)
+
+our $RE_PAREN; # predeclear
+$RE_PAREN = 
     qr{
        \(
        (?:
@@ -24,7 +36,8 @@ our $RE_PAREN =
        )*
        \)
       }xo;
-our $RE_EXPR = 
+our $RE_EXPR; # predeclear
+$RE_EXPR = 
     qr{
        \{
        (?:

@@ -1,5 +1,5 @@
 #
-# $Id: List.pm,v 0.11 2004/05/03 15:09:14 dankogai Exp dankogai $
+# $Id: List.pm,v 0.11 2004/05/03 15:09:14 dankogai Exp $
 #
 package Regexp::List;
 use 5.006; # qr/(??{}/ needed
