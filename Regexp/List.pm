@@ -1,5 +1,5 @@
 #
-# $Id: List.pm,v 0.1 2003/05/31 10:43:20 dankogai Exp dankogai $
+# $Id: List.pm,v 0.10 2003/06/02 20:10:56 dankogai Exp $
 #
 package Regexp::List;
 use 5.006; # qr/(??{}/ needed
@@ -7,7 +7,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 #use base qw/Exporter/;
-our $VERSION = do { my @r = (q$Revision: 0.1 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -18,8 +18,7 @@ our $FILLER = "\x{fffd}"; # fallback
 
 our $RE_START =
     qr{(?:
-    (?!\\)\(
-    \?
+    (?!\\)\((?:\?
     (?:
      ([imsx\-]*:)  | # options 
      \<?[\=\!]     | # look(behind|ahead)
@@ -27,7 +26,7 @@ our $RE_START =
      #$RE_PAREN    | # ( condtion )
      #\??$RE_EXPR  | # { expression }
      \>              # independent subexpression
-    )?
+    ))?
     )}xo;
 
 our $RE_XCHAR =
@@ -124,8 +123,8 @@ sub tokens{
 
 sub regopt{
     my  $re = shift;
-    ref $re eq 'Regexp' or return;
-    $re =~ /^($RE_START)/ or die "malformed regexp : $re";
+    #ref $re eq 'Regexp' or return;
+    $re =~ /^($RE_START)/ or return; # die "malformed regexp : $re";
     my $opt = $1;
     $opt =~ s/\(\?//o; $opt =~ s/[-:].*//o;
     $opt;
@@ -135,7 +134,7 @@ sub expand{
     my $self  = shift;
     my $re   = shift;
     my $isre  = ref $re eq 'Regexp';
-    $isre or $re = qr/$re/;
+    #$isre or $re = qr/$re/;
     my $mod = regopt($re);
     $mod =~ /x/ or $mod .= 'x';
     my ($indent, @indent);
@@ -162,15 +161,17 @@ sub expand{
 }
 
 sub unexpand{
-    my $self  = shift;
+    my $self = shift;
     my $re   = shift;
     my $isre  = ref $re eq 'Regexp';
-    my $mod = regopt($re); $mod =~ s/x//o; 
-    $re =~ s/\((?!\\)\?\#[^\)]+\)//o;
-    $re =~ s/(?!\\)#.*$//mg;
-    $re =~ s/\\ /\\x20/sg;  # escaped spaces
-    $re =~ s/\s+//sg; 
-    $re =~ s/\\x20/ /sg;    # reverts to spaces
+    my $mod = regopt($re); 
+    $mod =~ s/x//o;
+    $re =~ s/\((?!\\)\?\#[^\)]+\)//o; # strip (?#comment)
+    $re =~ s/(?!\\)#.*$//mg;          # strip comment
+    $re =~ s/(?!\\)[ \t]//g;          # strip space
+    # $re =~ s/([^\x00-\xff])/sprintf('\x{%04x}', ord($1))/eg;
+    # and finally strip CRLF
+    $re =~ s/[\n\r]//g;
     $isre ? 
 	$mod ? qr/(?$mod:$re)/ : qr/$re/ :
 	$mod ? qq/(?$mod:$re)/ : $re;
@@ -268,7 +269,7 @@ sub _tail_re{
 }
 
 use Data::Dumper;
-$Data::Dumper::Indent = 0;
+$Data::Dumper::Indent = 1;
 
 sub _prefixes {
     my $self = shift;
@@ -295,8 +296,11 @@ sub _prefixes {
 	my @suffix = map {$self->_tail($_, $l)} @{$prefix{$_}};
 	push @head, [$prefix, @suffix];
     }
+    #print Dumper \@head;
+    #sleep 1;
     @head;
 }
+
 
 sub _rev{
     my $self = shift;
@@ -305,9 +309,14 @@ sub _rev{
 	return length $str > 2 ?
 	    join '' => reverse split /(..)/, $str : $str;
     }else{
-	my $re = $self->{_char};
-	return $str =~ /^$re?$/o ?
-	    $str : join '' => reverse split /($re)/, $str;
+	my $re = $self->{_token};
+	#return $str =~ /^$re?$/o ?
+	#   $str : join '' => reverse split /($re)/, $str;
+	$str =~ /^$self->{_token}$/ and return $str;
+	my @token;
+	$str =~ s{ ($re) }{ push @token, $1 }egx;
+	return join '' => reverse @token;
+	    
 	    
     }
 }
@@ -321,7 +330,6 @@ sub _trie_regex {
 	print STDERR '>'x $self->{_indent}, " ", join(',' => @_), "\n";
 
     my (@leaf, @result);
-
 
     #
     # Suffixing Optimization
@@ -388,7 +396,6 @@ sub _trie_regex {
 	    }
 	    if (@char){
 		my $char = $self->_optim_cc(@char);
-		$char =~ /(?!\\)\./ and $char = '.';
 		splice @result, $charpos, 0, $char;
 		@result = grep {$_} @result;
 		if (@result == 1){
@@ -421,6 +428,10 @@ sub _optim_cc{
     if ($self->{quotemeta}){
 	return  @_ ? @_ > 1  ? "[".join("",@_)."]" : $_[0] : undef;
     }
+    # check '.'
+    for (@_){
+	$_ eq '.' and return '.';
+    }
     my @char = @_;
     my ($positive, $negative) = ('','');
     my ($npos, $nneg) = (0, 0);
@@ -428,8 +439,13 @@ sub _optim_cc{
 	if    (s/^\[\^(.*)\]$/$1/){
 	    $negative .= $_; $nneg += 2; next;
 	}
-	s/^\[(.*)\]$/$1/ and $npos += 2;
-	$positive .= $_; $npos++;
+	if (s/^\[(.*)\]$/$1/){
+	    $positive .= $_; $npos += 2; next;
+	}else{
+	    #$positive .= length($_) eq 1 ? qq/\Q$_/ : $_;
+	    $positive .= $_ eq '-' ? '\-' : $_;
+	    $npos++;
+	}
     }
     $nneg > 1 and $negative = qq/[^$negative]/;
     $npos > 1 and $positive = qq/[$positive]/;
@@ -444,7 +460,7 @@ __END__
 
 =head1 NAME
 
-Regexp::List - builds regular expressions out of a list of words====        2 words
+Regexp::List - builds regular expressions out of a list of words
 
 =head1 SYNOPSIS
 
@@ -489,7 +505,7 @@ regular expresson.  See L</IMPLEMENTATION> to find out how it is
 achieved.  If you want to know the underlying black magic even
 further, see the source.
 
-=item $l->set(I<< key=>value, ... >>)
+=item $l->set(I<< key => value, ... >>)
 
 Sets attributes.  There are many attributes supported but let me
 mention just a few that you may be interested.
@@ -640,7 +656,7 @@ C<eg/> directory in this package contains example scripts.
 
 =item Perl standard documents
 
- L<perltodo>, L<perlre>
+L<perltodo>, L<perlre>
 
 =item CPAN Modules
 

@@ -1,5 +1,5 @@
 #
-# $Id: 00-dict.pl,v 0.1 2003/05/31 10:43:20 dankogai Exp dankogai $
+# $Id: 00-dict.pl,v 0.1 2003/05/31 10:43:20 dankogai Exp $
 #
 use strict;
 # use Test::More qw/no_plan/;

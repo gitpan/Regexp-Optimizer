@@ -1,12 +1,12 @@
 #
-# $Id: Optimizer.pm,v 0.1 2003/05/31 10:43:20 dankogai Exp dankogai $
+# $Id: Optimizer.pm,v 0.10 2003/06/02 20:10:56 dankogai Exp $
 #
 package Regexp::Optimizer;
 use 5.006; # qr/(??{}/ needed
 use strict;
 use warnings;
 use base qw/Regexp::List/;
-our $VERSION = do { my @r = (q$Revision: 0.1 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -16,48 +16,48 @@ our $VERSION = do { my @r = (q$Revision: 0.1 $ =~ /\d+/g); sprintf "%d."."%02d" 
 # see perldoc perlop
 our $RE_PAREN = 
     qr{
-       (?!\\)\(
+       \(
        (?:
 	(?> [^()]+ )
 	|
 	(??{ $RE_PAREN })
        )*
-       (?!\\)\)
+       \)
       }xo;
 our $RE_EXPR = 
     qr{
-       (?!\\)\{
+       \{
        (?:
 	(?> [^{}]+ )
 	|
 	(??{ $RE_EXPR })
        )*
-       (?!\\)\}
+       \}
       }xo;
 our $RE_PIPE = qr/(?!\\)\|/o;
 our $RE_CHAR = 
     qr{(?:
 	# single character...
-	(?!\\)[^\\\[(|)\]]      | # raw character except '[(|)]'
+	(?!\\)[^\\\[(|)\]]       | # raw character except '[(|)]'
 	$Regexp::List::RE_XCHAR  | # extended characters
        )}xo;
 our $RE_CCLASS = 
     qr{(?:
-	(?!\\)\[ $RE_CHAR+ (?!\\)\] |
+	(?!\\)\[ $RE_CHAR+? \] |
 	$Regexp::List::RE_XCHAR      | # extended characters
-	(?!\\)[^(|)]                | # raw character except '[(|)]'
+	(?!\\)[^(|)]                 | # raw character except '[(|)]'
 	# Note pseudo-characters are not included
     )}xo;
 our $RE_QUANT =
     qr{(?:
 	(?!\\)
-	(?:
-	 \? |
-	 \+ |
-	 \* |
-	 \{[\d,]+\}
-	)\??
-       )}xo;
+	    (?:
+	     \? |
+	     \+ |
+	     \* |
+	     \{[\d,]+\}
+	     )\??
+	)}xo;
 our $RE_TOKEN = 
     qr{(?:
 	(?:
@@ -72,6 +72,7 @@ our $RE_START = $Regexp::List::RE_START;
 
 our %PARAM = (meta      => 1,
 	      quotemeta => 0,
+	      lookahead => 0,
 	      optim_cc  => 1,
 	      modifiers => '',
 	      _char     => $RE_CHAR,
@@ -86,66 +87,111 @@ sub new{
     $self;
 }
 
+sub list2re{
+    shift->SUPER::list2re(map {_strip($_)} @_);
+}
+
 sub optimize{
     my $self = shift;
     my $str  = shift;
-    $self->unexpand($str);
+    $self->{unexpand} and $str = $self->unexpand($str);
+    # safetey feature against qq/(?:foo)(?:bar)/
+    !ref $str and $str =~ /^$RE_START/ and $str = qr/$str/;
     my $re = $self->_optimize($str);
     qr/$re/;
 }
 
+sub _strip{
+    my ($str, $force) = @_;
+    $force or ref $str eq 'Regexp' or return $str;
+    $str =~ s/^($RE_START)//o or return $str;
+    my $regopt = $1;  $str =~ s/\)$//o;
+    $regopt =~ s/^\(\??//o; 
+    $regopt =~ /^[-:]/ and $regopt = undef;
+    ($str, $regopt);
+}
+
+my %my_l2r_opts = 
+    (
+     as_string => 1, 
+     debug     => 0,
+     _token    => qr/$RE_PAREN$RE_QUANT?|$RE_PIPE|$RE_TOKEN/,
+    );
+
 sub _optimize{
     no warnings 'uninitialized';
     my $self = shift;
-    my $str  = shift;
-    # don't waste time unless we have to
-    $str !~ /$RE_PIPE/ and return $str;
-    my $regopt = '';
-
-    $str =~ s/^($RE_START)//o;
-    $regopt =  $1; $regopt =~ s/^\(//o;
-    $str =~ s/\)$//o;
-
-    $str =~ s/\\([()])/"\\x" . sprintf("%X", ord($1))/ego;
-    # $str =~ s/(\s)/"\\x" . sprintf("%X", ord($1))/ego;
-    unless ($str =~ /$RE_PAREN/){
-        my @words = split /$RE_PIPE/ => $str;
-	my $l = $self->clone->set(as_string => 0);
-        return $l->list2re(@words);
+    $self->{debug} and $self->{_indent}++;
+    $self->{debug} and
+	print STDERR '>'x $self->{_indent}, " ", $_[0], "\n";
+    my ($result, $regopt)  = _strip(shift, 1);
+    $result =~ s/\\([()])/"\\x" . sprintf("%X", ord($1))/ego;
+    # $result =~ s/(\s)/"\\x" . sprintf("%X", ord($1))/ego;
+    $result !~ /$RE_PIPE/ and goto RESULT;
+    my $l = $self->clone->set(%my_l2r_opts);
+    # optimize
+    unless ($result =~ /$RE_PAREN/){
+        my @words = split /$RE_PIPE/ => $result;
+        $result = $l->list2re(@words);
+	goto RESULT;
     }
-    
-    $str =~ s{
-	      ($RE_PAREN)
-            }{
-		 my $group = $1;
-		 if ($group =~ /$RE_PIPE/o){
-		     $group =~ s/^($RE_START)//o;
-		     my $regopt =  $1; $regopt =~ s/^\(//o;
-		     $group =~ s/\)$//o;
-		     my @words;
-		     $group =~ 
-			 s{
-			   ($RE_TOKEN+|$RE_PAREN)
-			  }{
-			      my $word = $1;
-			      if ($word =~ /$RE_PAREN/){
-				  # recurse;
-				  $word = $self->_optimize($word); 
-			      }
-			      if ($word){
-				  push @words, $word;
-			      }
-			  }egox;
-		     
-		     # warn join(",", @words);
-		     $group = $self->list2re(@words);
-		     $regopt and $group = "($regopt$group)";
-		     # warn $group;
-		 }
-		 $group;
-	     }egoxs;
-    # warn qq($str, $regopt);
-    return $regopt ? qq/($regopt$str)/ : $str;
+    my (@term, $sp);
+    while ($result){
+	if ($result =~ s/^($RE_PAREN)($RE_QUANT?)//){
+	    my ($term, $quant) = ($1, $2);
+	    $term = $self->_optimize($term);
+	    $l->{optim_cc} = $quant ? 0 : 1;
+	    if ($quant){
+		if ($term =~ /^$self->{_cclass}$/){
+		    $term .= $quant;
+		}else{
+		    $term = $self->{po} . $term . $self->{pc} . $quant;
+		}
+	    }
+	    $term[$sp] .= $term;
+	}elsif($result =~ s/^$RE_PIPE//){
+	    $sp += 2;
+	    push @term, '|';
+	}elsif($result =~ s/^($RE_TOKEN+)//){
+	    # warn $1;
+	    $term[$sp] .= $1;
+	}else{
+	    die "something is wrong !";
+	}
+    }
+    # warn scalar @term , ";", join(";" => @term);
+    # sleep 1;
+    my @stack;
+    while (my $term = shift @term){
+	if ($term eq '|'){
+	    push @stack, $l->list2re(pop @stack, shift @term);
+	}else{
+	    push @stack, $term;
+	}
+    }
+    $result = join('' => @stack);
+ RESULT:
+    $result =  $regopt ? qq/(?$regopt$result)/ : $result;
+    # warn qq($result, $regopt);
+    $self->{debug} and 
+	print STDERR '<'x $self->{_indent}, " ", $result, "\n";
+    $self->{debug} and $self->{_indent}--;
+    $result;
+}
+
+sub _pair2re{
+    my $self = shift;
+    $_[0] eq $_[1] and return $_[0];
+    my ($first, $second) =
+	length $_[0] <= length $_[1] ? @_ : ($_[1], $_[0]);
+    my $l = length($first);
+    $l -= 1
+	while $self->_head($first, $l) ne $self->_head($second, $l);
+    $l > 0 or return join("", @_);
+    return $self->_head($first, $l) . 
+	$self->{po} . 
+	$self->_tail($first, $l) . '|' . $self->_tail($second, $l) .
+	$self->{pc};
 }
 
 1;
@@ -178,12 +224,16 @@ To install this module type the following:
 
 =head1 DESCRIPTION
 
-Here is a quote from L<perltodo>
+Here is a quote from L<perltodo>.
 
-  Factoring out common suffices/prefices in regexps (trie optimization)
+=over
 
-       Currently, the user has to optimize "foo|far" and "foo|goo" into
-       "f(?:oo|ar)" and "[fg]oo" by hand; this could be done automatically.
+Factoring out common suffices/prefices in regexps (trie optimization)
+
+Currently, the user has to optimize "foo|far" and "foo|goo" into
+"f(?:oo|ar)" and "[fg]oo" by hand; this could be done automatically.
+
+=back
 
 This module implements just that.
 
@@ -199,6 +249,26 @@ methods not listed here, see L<Regexp::List>.
 =over
 
 =item $o  = Regexp::Optimizer->new;
+
+=item $o->set(I<< key => value, ... >>)
+
+Just the same us L<Regexp::List> except for the attribute below;
+
+=over
+
+=item unexpand
+
+When set to one, $o->optimize() tries to $o->expand before actually
+starting the operation.
+
+  # cases you need to set expand => 1
+  $o->set(expand => 1)->optimize(qr/
+                                   foobar|
+                                   fooxar|
+                                   foozar
+                                   /x);
+
+=back
 
 =item $re = $o->optimize(I<regexp>);
 
@@ -258,9 +328,49 @@ expression) is not as thoroughly tested as L<Regex::List>
 
 =item *
 
+May still fall into deep recursion when you attempt to optimize
+deeply nested regexp.  See L</PRACTICALITY>.
+
+=item *
+
 Does not grok (?{expression}) and (?(cond)yes|no) constructs yet
 
+=item *
+
+You need to escape characters in character classes.
+
+  $o->optimize(qr/[a-z()]|[A-Z]/);              # wrong
+  $o->optimize(qr/[a-z\(\)]|[A-Z]/);            # right
+  $o->optimize(qr/[0-9A-Za-z]|[\Q-_.!~*"'()\E]/ # right, too. 
+
+=item *
+
+When character(?: class(?:es)?)? are aggregated, duplicate ranges are
+left as is.  Though functionally OK, it is cosmetically ugly.
+
+  $o->optimize(qr/[0-5]|[5-9]|0123456789/);
+  # simply turns into [0-5][5-9]0123456789] not [0-9]
+
+I left it that way because marking-rearranging approach can result a
+humongous result when unicode characters are concerned (and
+\p{Properties}).
+
 =back
+
+=head1 PRACTICALITY
+
+Though this module is still experimental, It is still good enough even
+for such deeply nested regexes as the followng.
+
+  # See 3.2.2 of  http://www.ietf.org/rfc/rfc2616.txt
+  # BNF faithfully turned into a regex
+  http://(?:(?:(?:(?:(?:[a-z]|[A-Z])|[0-9])|(?:(?:[a-z]|[A-Z])|[0-9])(?:(?:(?:[a-z]|[A-Z])|[0-9])|-)*(?:(?:[a-z]|[A-Z])|[0-9]))\.)*(?:(?:[a-z]|[A-Z])|(?:[a-z]|[A-Z])(?:(?:(?:[a-z]|[A-Z])|[0-9])|-)*(?:(?:[a-z]|[A-Z])|[0-9]))\.?|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)(?::[0-9]*)?(?:/(?:(?:(?:(?:[a-z]|[A-Z])|[0-9])|[\-\_\.\!\~\*\'\(\)])|%(?:[0-9]|[A-Fa-f])(?:[0-9]|[A-Fa-f])|[:@&=+$,])*(?:;(?:(?:(?:(?:[a-z]|[A-Z])|[0-9])|[\-\_\.\!\~\*\'\(\)])|%(?:[0-9]|[A-Fa-f])(?:[0-9]|[A-Fa-f])|[:@&=+$,])*)*(?:/(?:(?:(?:(?:[a-z]|[A-Z])|[0-9])|[\-\_\.\!\~\*\'\(\)])|%(?:[0-9]|[A-Fa-f])(?:[0-9]|[A-Fa-f])|[:@&=+$,])*(?:;(?:(?:(?:(?:[a-z]|[A-Z])|[0-9])|[\-\_\.\!\~\*\'\(\)])|%(?:[0-9]|[A-Fa-f])(?:[0-9]|[A-Fa-f])|[:@&=+$,])*)*)*(?:\\?(?:[;/?:@&=+$,]|(?:(?:(?:[a-z]|[A-Z])|[0-9])|[\-\_\.\!\~\*\'\(\)])|%(?:[0-9]|[A-Fa-f])(?:[0-9]|[A-Fa-f]))*)?)?
+
+  # and optimized
+  http://(?::?[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?\.[a-zA-Z]*(?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?\.?|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)(?::[0-9]*)?(?:/(?:(?:(?:[a-zA-Z0-9\-\_\.\!\~\*\'\x28\x29]|%[0-9A-Fa-f][0-9A-Fa-f])|[:@&=+$,]))*(?:;(?:(?:(?:[a-zA-Z0-9\-\_\.\!\~\*\'\x28\x29]|%[0-9A-Fa-f][0-9A-Fa-f])|[:@&=+$,]))*)*(?:/(?:(?:(?:[a-zA-Z0-9\-\_\.\!\~\*\'\x28\x29]|%[0-9A-Fa-f][0-9A-Fa-f])|[:@&=+$,]))*(?:;(?:(?:(?:[a-zA-Z0-9\-\_\.\!\~\*\'\x28\x29]|%[0-9A-Fa-f][0-9A-Fa-f])|[:@&=+$,]))*)*)*(?:\\?(?:(?:[;/?:@&=+$,a-zA-Z0-9\-\_\.\!\~\*\'\x28\x29]|%[0-9A-Fa-f][0-9A-Fa-f]))*)?)?
+
+By carefully examine both you can find that character classes are
+properly aggregated.
 
 =head1 SEE ALSO
 

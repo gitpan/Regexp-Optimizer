@@ -1,5 +1,5 @@
 #
-# $Id: 03-utf8.t,v 0.1 2003/05/31 10:43:20 dankogai Exp dankogai $
+# $Id: 03-utf8.t,v 0.3 2003/06/02 20:11:54 dankogai Exp dankogai $
 #
 BEGIN {
     if ($ENV{'PERL_CORE'}){
@@ -20,38 +20,34 @@ use strict;
 use warnings;
 use Test::More tests => 18;
 use Regexp::Optimizer;
-my $l = new Regexp::List;
-my $o = new Regexp::Optimizer;
+my $l = Regexp::List->new(lookahead => 0);
+my $o = Regexp::Optimizer->new;
 my $Debug = shift;
 
 # not so trivial
 
 my $qq_utf8   = qq/\x20|\x{3000}/;
-my $qr_utf8_l = qq/(?=[\\\x20\x{3000}])[\\\x20\x{3000}]/;
-my $qr_utf8_o = qq/(?=[\x20\x{3000}])[\x20\x{3000}]/;
+my $qr_utf8_l = qq/[\\\x20\x{3000}]/;
+my $qr_utf8_o = qq/[\x20\x{3000}]/;
 
 use charnames ':full';
 
 my %t_l = 
     (
-     $qq_utf8         => qr/$qr_utf8_l/,
-     q/\x20|\x{3000}/ => qr/(?=[\\x20\\x\{3000\}])\\x(?:20|\{3000\})/,
-     q/\p{Kanji}|\P{Hiragana}/
-     => qr/(?=[\\P\{Hiragana\}\\p\{Kanji\}])\\(?:p\{Kanji|P\{Hiragana)\}/,
-     q/\N{DIGIT ONE}|\N{DIGIT TWO}/ => 
-     qr/(?=[\\N\{DIGIT\ ONE\}\\N\{DIGIT\ TWO\}])\\N\{DIGIT\ (?:ONE|TWO)\}/,
-     q/\C|\X/ => qr/\\[CX]/,
+     $qq_utf8                       => qr/$qr_utf8_l/,
+     q/\x20|\x{3000}/               => qr/\\x(?:20|\{3000\})/,
+     q/\p{Kanji}|\P{Hiragana}/      => qr/\\(?:p\{Kanji|P\{Hiragana)\}/,
+     q/\N{DIGIT ONE}|\N{DIGIT TWO}/ => qr/\\N\{DIGIT\ (?:ONE|TWO)\}/,
+     q/\C|\X/                       => qr/\\[CX]/,
 );
-
 
 my %t_o = 
     (
-     $qq_utf8         => qr/$qr_utf8_o/,
-     q/\x20|\x{3000}/ => qr/(?=[\x20\x{3000}])[\x20\x{3000}]/,
-     q/\p{Kanji}|\P{Hiragana}/ => qr/(?=[\P{Hiragana}\p{Kanji}])[\p{Kanji}\P{Hiragana}]/,
-     q/\N{DIGIT ONE}|\N{DIGIT TWO}/ => 
-     q/(?-xism:(?=[\N{DIGIT ONE}\N{DIGIT TWO}])[\N{DIGIT ONE}\N{DIGIT TWO}])/,
-     q/\C|\X/ => qr/(?:\C|\X)/,
+     $qq_utf8                       => qr/$qr_utf8_o/,
+     q/\x20|\x{3000}/               => qr/[\x20\x{3000}]/,
+     q/\p{Kanji}|\P{Hiragana}/      => qr/[\p{Kanji}\P{Hiragana}]/,
+     q/\N{DIGIT ONE}|\N{DIGIT TWO}/ => q/(?-xism:[\N{DIGIT ONE}\N{DIGIT TWO}])/,
+     q/\C|\X/                        => qr/(?:\C|\X)/,
     );
 
 for (sort {length $a <=> length $b} keys %t_l){
@@ -76,32 +72,34 @@ SKIP:{
     while (<F>) {
 	push @words, $1 while( /([^\x00-\xff]+)/gc );
     }
+    close F;
     $Debug and print join(",", @words);
     my @match;
     my $re_l = $l->list2regex(@words);
     $Debug and warn $re_l;
-    open F, "<:utf8", $file or die "$file:$!";
-    while (<F>) {
-	push @match, $1 while( /($re_l)/gc );
-    }
-    close $file;
- SKIP:{
-	skip "perl 5.8.1 or better needed" => 1 unless $] > 5.008;
-	ok(eq_array(\@words, \@match), "l->l(): all words in $file");
-    }
-    @match = ();
     my $re_trivial = join('|' => map {quotemeta($_) } @words);
     my $re_o = $o->optimize($re_trivial);
     $Debug and warn $re_o;
-    open F, $0 or die "$0:$!";
-    while(<F>){
-	push @match, $1 while( /($re_o)/gc );
-    }
-    close $0;
+    is($re_l, $re_o, "l->l and o->o agrees");
+
  SKIP:{
-	skip "bleedperl has a problem right now" => 1 unless 0;
+	skip "perl 5.8.1 or better needed" => 2 unless $] > 5.008;
+	@match = ();
+	open F, "<:utf8", $file or die "$file:$!";
+	while (<F>) {
+	    push @match, $1 while( /($re_l)/gc );
+	}
+	close F;
+	ok(eq_array(\@words, \@match), "l->l(): all words in $file");
+
+	@match = ();
+	open F, "<:utf8", $file or die "$file:$!";
+	while(<F>){
+	    push @match, $1 while( /($re_o)/gc );
+	}
+	close F;
 	ok(eq_array(\@words, \@match), "o->o(): all words in $0");
     }
-    is($re_l, $re_o, "l->l and o->o agrees");
+
 }
 __END__

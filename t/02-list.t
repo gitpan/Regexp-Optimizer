@@ -1,19 +1,19 @@
 #
-# $Id: 02-list.t,v 0.1 2003/05/31 10:51:09 dankogai Exp dankogai $
+# $Id: 02-list.t,v 0.3 2003/06/02 20:11:54 dankogai Exp dankogai $
 #
 use strict;
 use warnings;
 use Test::More tests => 24;
 use Regexp::Optimizer;
-my $l = new Regexp::List;
-my $o = new Regexp::Optimizer;
+my $l = Regexp::List->new->new(lookahead => 0);
+my $o = Regexp::Optimizer->new;
 my $Debug = shift;
 # classical
 my %t_l =
     (
      qq/foobar fooxar/  => qr/foo[bx]ar/,
-     qq/not optimized/  => qr/(?=[no])(?:not|optimized)/,
-     qq/1 2/            => qr/(?=[12])[12]/,
+     qq/not optimized/  => qr/(?:not|optimized)/,
+     qq/1 2/            => qr/[12]/,
      qq/1 12/           => qr/12?/,
      qq/1 12 123/       => qr/1(?:23?)?/,
      qq/aa ab/          => qr/a[ab]/,
@@ -33,17 +33,16 @@ for (sort {length $a <=> length $b} keys %t_l){
 
 %t_l = 
     (
-     q/\012|\015/     => qr/(?=[\\012\\015])\\01[25]/,
-     q/\x20|\x3F/ =>  => qr/(?=[\\x20\\x3F])\\x(?:20|3F)/,
-     q/\cZ|\cA/       => qr/(?=[\\cA\\cZ])\\c[ZA]/,
+     q/\012|\015/     => qr/\\01[25]/,
+     q/\x20|\x3F/ =>  => qr/\\x(?:20|3F)/,
+     q/\cZ|\cA/       => qr/\\c[ZA]/,
 );
 
-# use charnames ':full';
 my %t_o = 
     (
-     q/\012|\015/     => qr/(?=[\012\015])[\012\015]/,
-     q/\x20|\x3F/ =>  => qr/(?=[\x20\x3F])[\x20\x3F]/,
-     q/\cZ|\cA/       => qr/(?=[\cA\cZ])[\cZ\cA]/,
+     q/\012|\015/     => qr/[\012\015]/,
+     q/\x20|\x3F/ =>  => qr/[\x20\x3F]/,
+     q/\cZ|\cA/       => qr/[\cZ\cA]/,
     );
 
 for (sort {length $a <=> length $b} keys %t_l){

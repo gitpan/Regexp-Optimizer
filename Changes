@@ -1,6 +1,28 @@
 #
-# $Id: Changes,v 0.1 2003/05/31 10:44:41 dankogai Exp dankogai $
+# $Id: Changes,v 0.10 2003/06/02 20:11:07 dankogai Exp $
 #
-$Revision: 0.1 $ $Date: 2003/05/31 10:44:41 $
+$Revision: 0.10 $ $Date: 2003/06/02 20:11:07 $
+! *
+  Version jumps to 0.10 do to radical changes, especially in
+  $Regexp::Optimize.
+! Regexp/Optimizer.pm t/02-list.t t/03-utf8.t
+  Aagh!  Why didn't I come up with such a simple idea !?
+  ->optimize is completely rewritten.
+  t/*.t is streamlined to reflect changes.
+  Now ->optimize() *really* optimizes even for
+  qr/(?:1|12)|123/.  Used to return qr/1(?:2?|23)/ but now it
+  returns qr/1(?:23?)?/o
+! Regexp/Optimizer.pm  Regexp/List.pm
+  POD enhanced.
+
+0.02 2003/06/01 00:11:26
+! Regexp/Optimizer.pm  Regexp/List.pm
+  * Lots of bug fixes regarding $o->optimize() for nested parens
+! t/02-list.t
+  Test data for #21 corrected
+! t/03-utf8.t
+  buggy SKIP: sections fixed.
+
+0.01 2003/05/31 10:44:41
 + *
   0th release
