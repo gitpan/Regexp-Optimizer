@@ -1,12 +1,12 @@
 #
-# $Id: Optimizer.pm,v 0.12 2004/05/04 17:12:14 dankogai Exp dankogai $
+# $Id: Optimizer.pm,v 0.13 2004/05/08 05:55:35 dankogai Exp dankogai $
 #
 package Regexp::Optimizer;
 use 5.006; # qr/(??{}/ needed
 use strict;
 use warnings;
 use base qw/Regexp::List/;
-our $VERSION = do { my @r = (q$Revision: 0.12 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.13 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -209,6 +209,7 @@ sub _pair2re{
 
 1;
 __END__
+
 # Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
@@ -218,7 +219,7 @@ Regexp::Optimizer - optimizes regular expressions
 =head1 SYNOPSIS
 
   use Regexp::Optimizer;
-  my $o  = Regexp::List->new;
+  my $o  = Regexp::Optimizer->new;
   my $re = $o->optimize(qr/foobar|fooxar|foozap/);
   # $re is now qr/foo(?:[bx]ar|zap)/
 

@@ -3,8 +3,8 @@ MANIFEST		This list of files
 META.yml		Module meta-data in YAML
 Makefile.PL
 README
-Regexp/List.pm
-Regexp/Optimizer.pm
+lib/Regexp/List.pm
+lib/Regexp/Optimizer.pm
 eg/mkregexp.pl
 eg/useregexp.pl
 t/00-dict.pl

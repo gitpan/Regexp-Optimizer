@@ -1,10 +1,15 @@
+# $Id: Makefile.PL,v 0.2 2004/05/08 05:55:35 dankogai Exp dankogai $
+
 use 5.006;
 use strict;
 use ExtUtils::MakeMaker;
+use File::Spec;
+
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
+
 my $ModName = 'Regexp::Optimizer';
-my $ModPath = $ModName; $ModPath =~ s,::,/,g; $ModPath .= '.pm';
+my $ModPath = File::Spec->catfile('lib', split(/::/ => $ModName)) . '.pm';
 
 WriteMakefile(
     'NAME'		=> $ModName,

@@ -1,5 +1,5 @@
 #
-# $Id: List.pm,v 0.11 2004/05/03 15:09:14 dankogai Exp $
+# $Id: List.pm,v 0.12 2004/05/08 05:55:35 dankogai Exp dankogai $
 #
 package Regexp::List;
 use 5.006; # qr/(??{}/ needed
@@ -7,7 +7,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 #use base qw/Exporter/;
-our $VERSION = do { my @r = (q$Revision: 0.11 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.12 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -456,6 +456,7 @@ sub _optim_cc{
 
 1;
 __END__
+
 # Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME

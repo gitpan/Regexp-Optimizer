@@ -1,8 +1,17 @@
 #
-# $Id: Changes,v 0.12 2004/05/04 17:12:14 dankogai Exp dankogai $
+# $Id: Changes,v 0.13 2004/05/08 05:55:35 dankogai Exp dankogai $
 #
 
-$Revision: 0.12 $ $Date: 2004/05/04 17:12:14 $
+$Revision: 0.13 $ $Date: 2004/05/08 05:55:35 $
+! lib/Regexp/Optimizer.pm
+  Document bug, reported by Frederick in the mail below, fixed.
+! Makefile.PL
+! Regexp/ -> lib/Regexp/
+  Module hierarchy realigned so cygwin is happy.  
+  Reported by Frederick Weiland
+  <30F579C44E1598429167C5E20E307BA19D807D@atlmsg01.raremedium.net>
+
+0.12 2004/05/04 17:12:14
 ! Regexp/Optimizer.pm
   Perl 5.8.4 and later corrected a bug so it is fatal to go
     my $x = qr{ ... (??{ $x }) ... };
