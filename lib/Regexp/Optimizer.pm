@@ -1,12 +1,12 @@
 #
-# $Id: Optimizer.pm,v 0.14 2004/11/05 12:44:32 dankogai Exp $
+# $Id: Optimizer.pm,v 0.15 2004/12/05 16:07:34 dankogai Exp dankogai $
 #
 package Regexp::Optimizer;
 use 5.006; # qr/(??{}/ needed
 use strict;
 use warnings;
 use base qw/Regexp::List/;
-our $VERSION = do { my @r = (q$Revision: 0.14 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.15 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -338,7 +338,7 @@ tested very well.
 =item *
 
 Regex parser in this module (which itself is implemented by regular
-expression) is not as thoroughly tested as L<Regex::List>
+expression) is not as thoroughly tested as L<Regexp::List>
 
 =item *
 

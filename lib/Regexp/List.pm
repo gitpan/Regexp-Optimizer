@@ -1,5 +1,5 @@
 #
-# $Id: List.pm,v 0.12 2004/05/08 05:55:35 dankogai Exp $
+# $Id: List.pm,v 0.13 2004/12/05 16:07:34 dankogai Exp dankogai $
 #
 package Regexp::List;
 use 5.006; # qr/(??{}/ needed
@@ -7,7 +7,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 #use base qw/Exporter/;
-our $VERSION = do { my @r = (q$Revision: 0.12 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.13 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -467,8 +467,8 @@ Regexp::List - builds regular expressions out of a list of words
 
   use Regexp::List;
   my $l  = Regexp::List->new;
-  my $re = $l->list2re(qw/foobar fooxar foozap/);
-  # $re is now qr/foo(?:[bx]ar|zap)/
+  my $re = $l->list2re(qw/foobar fooxar foozap fooza/);
+  # $re is now qr/foo(?:[bx]ar|zap?)/
 
 =head1 ABSTRACT
 
