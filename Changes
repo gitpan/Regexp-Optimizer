@@ -1,8 +1,13 @@
 #
-# $Id: Changes,v 0.13 2004/05/08 05:55:35 dankogai Exp dankogai $
+# $Id: Changes,v 0.14 2004/11/05 12:44:48 dankogai Exp dankogai $
 #
 
-$Revision: 0.13 $ $Date: 2004/05/08 05:55:35 $
+$Revision: 0.14 $ $Date: 2004/11/05 12:44:48 $
+! t/02-list.t
+  Addressed test failure that was raised by Perl 5.8.5
+  http://rt.cpan.org/NoAuth/Bug.html?id=8165
+
+0.13 2004/05/08 05:55:35
 ! lib/Regexp/Optimizer.pm
   Document bug, reported by Frederick in the mail below, fixed.
 ! Makefile.PL

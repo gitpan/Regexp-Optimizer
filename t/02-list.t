@@ -1,5 +1,5 @@
 #
-# $Id: 02-list.t,v 0.3 2003/06/02 20:11:54 dankogai Exp $
+# $Id: 02-list.t,v 0.4 2004/11/05 12:44:48 dankogai Exp dankogai $
 #
 use strict;
 use warnings;
@@ -42,7 +42,7 @@ my %t_o =
     (
      q/\012|\015/     => qr/[\012\015]/,
      q/\x20|\x3F/ =>  => qr/[\x20\x3F]/,
-     q/\cZ|\cA/       => qr/[\cZ\cA]/,
+     q/\cZ|\cA/       => $] < 5.008005 ? qr/[\cZ\cA]/ : '(?-xism:[\cZ\cA])',
     );
 
 for (sort {length $a <=> length $b} keys %t_l){
