@@ -1,5 +1,5 @@
 #
-# $Id: 03-utf8.t,v 0.3 2003/06/02 20:11:54 dankogai Exp dankogai $
+# $Id: 03-utf8.t,v 0.3 2003/06/02 20:11:54 dankogai Exp $
 #
 BEGIN {
     if ($ENV{'PERL_CORE'}){

@@ -1,5 +1,5 @@
 #
-# $Id: List.pm,v 0.10 2003/06/02 20:10:56 dankogai Exp $
+# $Id: List.pm,v 0.11 2004/05/03 15:09:14 dankogai Exp dankogai $
 #
 package Regexp::List;
 use 5.006; # qr/(??{}/ needed
@@ -7,7 +7,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 #use base qw/Exporter/;
-our $VERSION = do { my @r = (q$Revision: 0.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.11 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -33,7 +33,7 @@ our $RE_XCHAR =
     qr{
        (?:\\
 	(?:
-	\\[^0xclupPNLUQEXC]   | # ordinary escaped character
+	[^0xclupPNLUQEXC]     | # ordinary escaped character
 	 0[0-9][0-9]          | # octal
 	 x(?:[0-9A-Fa-f]{1,2} | # hex
 	   \{[0-9A-Fa-f]+\})  | # unicode hex

@@ -1,12 +1,12 @@
 #
-# $Id: Optimizer.pm,v 0.10 2003/06/02 20:10:56 dankogai Exp $
+# $Id: Optimizer.pm,v 0.11 2004/05/03 15:07:53 dankogai Exp $
 #
 package Regexp::Optimizer;
 use 5.006; # qr/(??{}/ needed
 use strict;
 use warnings;
 use base qw/Regexp::List/;
-our $VERSION = do { my @r = (q$Revision: 0.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = do { my @r = (q$Revision: 0.11 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );

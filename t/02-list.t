@@ -1,5 +1,5 @@
 #
-# $Id: 02-list.t,v 0.3 2003/06/02 20:11:54 dankogai Exp dankogai $
+# $Id: 02-list.t,v 0.3 2003/06/02 20:11:54 dankogai Exp $
 #
 use strict;
 use warnings;

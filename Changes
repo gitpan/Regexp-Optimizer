@@ -1,7 +1,13 @@
 #
-# $Id: Changes,v 0.10 2003/06/02 20:11:07 dankogai Exp $
+# $Id: Changes,v 0.11 2004/05/03 15:09:14 dankogai Exp dankogai $
 #
-$Revision: 0.10 $ $Date: 2003/06/02 20:11:07 $
+
+$Revision: 0.11 $ $Date: 2004/05/03 15:09:14 $
+! Regexp/List.pm
+  Deep recursion addressed and corrected by yoz@yoz.com
+  https://rt.cpan.org/Ticket/Display.html?id=4937
+
+0.10 2003/06/02 20:11:07
 ! *
   Version jumps to 0.10 do to radical changes, especially in
   $Regexp::Optimize.
