@@ -7,7 +7,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 #use base qw/Exporter/;
-our $VERSION = do { my @r = (q$Revision: 0.13 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
+our $VERSION = '0.16_001';
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -16,11 +16,19 @@ our $DEBUG     = 0;
 
 our $FILLER = "\x{fffd}"; # fallback
 
+# According "perlre", a "^" immediately after the "?" is a shorthand
+# equivalent to "d-imsx" since Perl 5.14.
+my $options = 'imsx\-';
+if ($^V gt v5.14.0) {
+    $options .= '^';
+}
+
+our $RE_PAREN; # predeclear
 our $RE_START =
     qr{(?:
     (?!\\)\((?:\?
     (?:
-     ([imsx\-]*:)  | # options 
+     ([$options]*:)| # options 
      \<?[\=\!]     | # look(behind|ahead)
      \#[^\)]+      | # comments
      #$RE_PAREN    | # ( condtion )
@@ -671,7 +679,7 @@ Mastering Regular Expressions  L<http://www.oreilly.com/catalog/regex2/>
 
 =head1 AUTHOR
 
-Dan Kogai <dankogai@dan.co.jp>
+Dan Kogai <dankogai@dan.co.jp>, Kato Kazuyoshi <kato.kazuyoshi@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
