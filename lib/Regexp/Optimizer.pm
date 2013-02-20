@@ -1,13 +1,12 @@
 #
-# $Id: Optimizer.pm,v 0.15 2004/12/05 16:07:34 dankogai Exp dankogai $
+# $Id: Optimizer.pm,v 0.16 2013/02/20 08:53:16 dankogai Exp dankogai $
 #
 package Regexp::Optimizer;
 use 5.006; # qr/(??{}/ needed
 use strict;
 use warnings;
 use base qw/Regexp::List/;
-use charnames qw();
-our $VERSION = '0.16_001';
+our $VERSION = do { my @r = (q$Revision: 0.16 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -140,7 +139,6 @@ sub _optimize{
 	print STDERR '>'x $self->{_indent}, " ", $_[0], "\n";
     my ($result, $regopt)  = _strip(shift, 1);
     $result =~ s/\\([()])/"\\x" . sprintf("%X", ord($1))/ego;
-    $result =~ s/\\N{(.+?)}/"\\x" . sprintf("{%X}", charnames::vianame($1))/ego;
     # $result =~ s/(\s)/"\\x" . sprintf("%X", ord($1))/ego;
     $result !~ /$RE_PIPE/ and goto RESULT;
     my $l = $self->clone->set(%my_l2r_opts);
@@ -218,6 +216,10 @@ __END__
 
 Regexp::Optimizer - optimizes regular expressions
 
+=head1 OBSOLETED BY
+
+L<Regexp::Assemble>
+
 =head1 SYNOPSIS
 
   use Regexp::Optimizer;
@@ -242,14 +244,10 @@ To install this module type the following:
 
 Here is a quote from L<perltodo>.
 
-=over
+  Factoring out common suffices/prefices in regexps (trie optimization)
 
-Factoring out common suffices/prefices in regexps (trie optimization)
-
-Currently, the user has to optimize "foo|far" and "foo|goo" into
-"f(?:oo|ar)" and "[fg]oo" by hand; this could be done automatically.
-
-=back
+  Currently, the user has to optimize "foo|far" and "foo|goo" into
+  "f(?:oo|ar)" and "[fg]oo" by hand; this could be done automatically.
 
 This module implements just that.
 
@@ -412,7 +410,7 @@ Mastering Regular Expressions  L<http://www.oreilly.com/catalog/regex2/>
 
 =head1 AUTHOR
 
-Dan Kogai <dankogai@dan.co.jp>, Kato Kazuyoshi <kato.kazuyoshi@gmail.com>
+Dan Kogai <dankogai@dan.co.jp>
 
 =head1 COPYRIGHT AND LICENSE
 

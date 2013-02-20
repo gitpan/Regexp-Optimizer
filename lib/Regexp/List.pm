@@ -7,7 +7,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 #use base qw/Exporter/;
-our $VERSION = '0.16_001';
+our $VERSION = do { my @r = (q$Revision: 0.13 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r };
 
 #our @EXPORT = qw();
 #our %EXPORT_TAGS = ( 'all' => [ qw() ] );
@@ -16,19 +16,11 @@ our $DEBUG     = 0;
 
 our $FILLER = "\x{fffd}"; # fallback
 
-# According "perlre", a "^" immediately after the "?" is a shorthand
-# equivalent to "d-imsx" since Perl 5.14.
-my $options = 'imsx\-';
-if ($^V gt v5.14.0) {
-    $options .= '^';
-}
-
-our $RE_PAREN; # predeclear
 our $RE_START =
     qr{(?:
     (?!\\)\((?:\?
     (?:
-     ([$options]*:)| # options 
+     ([imsx\-]*:)  | # options 
      \<?[\=\!]     | # look(behind|ahead)
      \#[^\)]+      | # comments
      #$RE_PAREN    | # ( condtion )
@@ -471,6 +463,10 @@ __END__
 
 Regexp::List - builds regular expressions out of a list of words
 
+=head1 OBSOLETED BY
+
+L<Regexp::Assemble>
+
 =head1 SYNOPSIS
 
   use Regexp::List;
@@ -679,7 +675,7 @@ Mastering Regular Expressions  L<http://www.oreilly.com/catalog/regex2/>
 
 =head1 AUTHOR
 
-Dan Kogai <dankogai@dan.co.jp>, Kato Kazuyoshi <kato.kazuyoshi@gmail.com>
+Dan Kogai <dankogai@dan.co.jp>
 
 =head1 COPYRIGHT AND LICENSE
 

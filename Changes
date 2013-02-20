@@ -1,8 +1,11 @@
 #
 # $Id: Changes,v 0.15 2004/12/05 16:07:34 dankogai Exp dankogai $
 #
-
 $Revision: 0.15 $ $Date: 2004/12/05 16:07:34 $
+! lib/Regexp/Optimizer.pm lib/Regexp/List.pm
+  Marked obsolete.  Use Regexp::Assemble instead.
+
+0.15 2004/12/05 16:07:34
 ! lib/Regexp/Optimizer.pm lib/Regexp/List.pm
   Pod fixed accordingly to RT # 8733
   http://rt.cpan.org/NoAuth/Bug.html?id=8733
