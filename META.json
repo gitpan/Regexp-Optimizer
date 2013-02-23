@@ -1,7 +1,7 @@
 {
    "abstract" : "optimizes regular expressions",
    "author" : [
-      "Dan Kogai <dankogai@dan.co.jp>"
+      "Dan Kogai <dankogai+cpan@gmail.com>"
    ],
    "dynamic_config" : 1,
    "generated_by" : "ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.120921",
@@ -22,7 +22,7 @@
    "prereqs" : {
       "build" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "0"
+            "Test::More" : "0"
          }
       },
       "configure" : {
@@ -31,9 +31,12 @@
          }
       },
       "runtime" : {
-         "requires" : {}
+         "requires" : {
+            "Regexp::Assemble" : "0",
+            "perl" : "5.008001"
+         }
       }
    },
    "release_status" : "stable",
-   "version" : "0.16"
+   "version" : "0.20"
 }

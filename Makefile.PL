@@ -1,21 +1,28 @@
-# $Id: Makefile.PL,v 0.2 2004/05/08 05:55:35 dankogai Exp $
-
-use 5.006;
+#
+# $Id: Makefile.PL,v 0.20 2013/02/23 13:43:59 dankogai Exp dankogai $
+#
+use 5.008001;
 use strict;
+use warnings FATAL => 'all';
 use ExtUtils::MakeMaker;
-use File::Spec;
-
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
-
-my $ModName = 'Regexp::Optimizer';
-my $ModPath = File::Spec->catfile('lib', split(/::/ => $ModName)) . '.pm';
 
 WriteMakefile(
-    'NAME'		=> $ModName,
-    'VERSION_FROM'	=> $ModPath, # finds $VERSION
-    'PREREQ_PM'		=> {}, # e.g., Module::Name => 1.1
-    ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM => $ModPath, # retrieve abstract from module
-       AUTHOR     => 'Dan Kogai <dankogai@dan.co.jp>') : ()),
+    NAME             => 'Regexp::Optimizer',
+    AUTHOR           => q{Dan Kogai <dankogai+cpan@gmail.com>},
+    VERSION_FROM     => 'lib/Regexp/Optimizer.pm',
+    ABSTRACT_FROM    => 'lib/Regexp/Optimizer.pm',
+    LICENSE          => 'Artistic_2_0',
+    PL_FILES         => {},
+    MIN_PERL_VERSION => 5.008001,
+    CONFIGURE_REQUIRES => {
+        'ExtUtils::MakeMaker' => 0,
+    },
+    BUILD_REQUIRES => {
+        'Test::More' => 0,
+    },
+    PREREQ_PM => {
+        'Regexp::Assemble' =>  0,
+    },
+    dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean => { FILES => 'Regexp-Optimizer-*' },
 );
