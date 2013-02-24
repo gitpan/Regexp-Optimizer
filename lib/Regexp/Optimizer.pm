@@ -4,17 +4,16 @@ use 5.008001;
 use strict;
 use warnings FATAL => 'all';
 use Regexp::Assemble;
-our $VERSION = sprintf "%d.%02d", q$Revision: 0.20 $ =~ /(\d+)/g;
+our $VERSION = sprintf "%d.%02d", q$Revision: 0.21 $ =~ /(\d+)/g;
 
 my $re_nested;
 $re_nested = qr{
-  (?<=[^\\])\(           # unescaped open paren
-  (?:
-    (?>[^()]+)           # Non-parens w/o backtracking
-    |                    # or
-    (??{ $re_nested })   # Group with matching parens
-   )*
-  \)                     # close paren
+  \(                   # open paren
+  ((?:                 # start capture  
+    (?>[^()]+)       | # Non-parens w/o backtracking or ...
+    (??{ $re_nested }) # Group with matching parens
+  )*)                  # end capture
+  \)                   # close paren
 }msx;
 
 my $re_optimize = qr{(?<=[^\\])\|}msx;
@@ -27,40 +26,51 @@ sub new {
 sub _assemble {
     my $str = shift;
     return $str if $str !~ $re_optimize;
-    if ( $str =~ s{\A(\((?:\?.*?:)?)}{}msx ) {
-        my $op = $1;
-        $str =~ s/\)\z//msx;
-        return $op . _assemble($str) . ')';
-    }
-    elsif ( $str =~ m{(?<=[^\\])\(}msx ) {
-        $str =~ s/($re_nested)/_assemble($1)/msxge;
-        return $str;
-    }
-    else {
+    if ( $str !~ m/[(]/ms ) {
         my $ra = Regexp::Assemble->new();
-        $ra->add( split m{(?<=[^\\])\|}, $str );
+        $ra->add( split m{[|]}, $str );
         return $ra->as_string;
     }
+    $str =~ s{$re_nested}{
+        no warnings 'uninitialized';
+        my $sub = $1;
+        if ($sub =~ m/\A\?(?:[\?\{\(PR]|[\+\-]?[0-9])/ms) {
+            "($sub)";  # (?{CODE}) and like ruled out
+        }else{
+            my $mod = ($sub =~ s/\A\?//) ? '?' : '';
+            if ($mod) {
+                $sub =~ s{\A(
+                              [\w\^\-]*: | # modifier
+                              [<]?[=!]   | # assertions
+                              [<]\w+[>]  | # named capture
+                              [']\w+[']    # ditto
+                          )
+                     }{}msx;
+                $mod .= $1;
+            }
+            '(' . $mod . _assemble($sub) . ')'
+        }
+    }msxge;
+    $str;
 }
 
 sub as_string {
     my ( $self, $str ) = @_;
     return $str if $str !~ $re_optimize;
-    $str =~ s/\A\(\?(.*?)://;
-    my $mod = $1;
-    $str =~ s/\)\z//;
+    my ($mod) = ($str =~ m/\A\(\?(.*?):/);
     if ( $mod =~ /x/ ) {
         $str =~ s{^\s+}{}mg;
         $str =~ s{(?<=[^\\])\s*?#.*?$}{}mg;
         $str =~ s{(?:\r\n?|\n)}{}msg;
     }
-    $str = _assemble($str);
-    "(?$mod:$str)";
+    # escape all occurance of '\(' and '\)'
+    $str =~ s/\\([\(\)])/sprintf "\\x%02x" , ord $1/ge;
+    _assemble($str);
 }
 
 sub optimize {
     my $self = shift;
-    my $re   = $self->as_string(@_);
+    my $re   = $self->as_string(shift);
     qr{$re};
 }
 
@@ -74,7 +84,7 @@ Regexp::Optimizer - optimizes regular expressions
 
 =head1 VERSION
 
-$Id: Optimizer.pm,v 0.20 2013/02/23 13:43:59 dankogai Exp dankogai $
+$Id: Optimizer.pm,v 0.21 2013/02/24 05:15:37 dankogai Exp dankogai $
 
 =head1 SYNOPSIS
 
@@ -113,8 +123,19 @@ Same as C<optimize()> but returns a string instead of regexp object.
 
 =head1 CAVEAT
 
+=head2 ??{CODE} used
+
 This module depends on the C<??{CODE}> regexp construct which is still
 considered experimental as of Perl 5.16.
+
+=head2 not idempotent
+
+If you feed the regexp that is already optimized, the resulting regexp
+may not necessarily the same -- usually you get duplicate C<(?:)>:
+
+    my $re = qr/foobar|fooxar|foozap/;
+    $re = $ro->optimize($re); # qr/foo(?:[bx]ar|zap)/
+    $re = $ro->optimize($re); # qr/foo(?:(?:[bx]ar|zap))/
 
 =head1 SEE ALSO
 
