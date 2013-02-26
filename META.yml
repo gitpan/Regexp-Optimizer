@@ -20,4 +20,4 @@ no_index:
 requires:
   Regexp::Assemble: 0
   perl: 5.008001
-version: 0.22
+version: 0.23
